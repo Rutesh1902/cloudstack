@@ -1,0 +1,23 @@
+<!-- templates/file_manager.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Your Files</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Upload</button>
+</form>
+
+<ul>
+    {% for f in files %}
+        <li>
+            <a href="{{ f.file.url }}" download>{{ f.file.name }}</a>
+
+            (uploaded on {{ f.uploaded_at }})
+        </li>
+    {% empty %}
+        <li>No files yet.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

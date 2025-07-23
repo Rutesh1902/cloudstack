@@ -23,3 +23,11 @@ urlpatterns = [
     path('', include('core.urls')),  # include app URLs
 
 ]
+
+from django.conf.urls import handler400, handler403, handler404, handler500
+from core import views as core_views
+
+handler400 = core_views.error_400
+handler403 = core_views.error_403
+handler404 = core_views.error_404
+handler500 = core_views.error_500
