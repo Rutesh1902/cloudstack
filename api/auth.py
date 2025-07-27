@@ -25,3 +25,4 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"message": "Login successful"}
+    
