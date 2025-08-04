@@ -1,11 +1,16 @@
-from fastapi import APIRouter, UploadFile, File, Depends, Body
+from fastapi import APIRouter, UploadFile, File, Depends, Body, Query
+from services import file_ops
+
+from fastapi import APIRouter, Query
 from services import file_ops
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
 @router.get("/")
-def list_files():
-    return file_ops.list_all_files()
+def list_files(path: str = ""):
+    return {"files":  file_ops.list_all_files(path)}
+
+
 
 @router.post("/upload")
 async def upload_files(path: str = "", files: list[UploadFile] = File(...)):

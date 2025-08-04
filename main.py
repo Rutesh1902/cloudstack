@@ -13,9 +13,15 @@ app = FastAPI()
 
 # ✅ Mount your media directory (adjust 'cloudstack' to your actual folder)
 app.mount("/preview", StaticFiles(directory="C:/cloudtstack"), name="preview")
+# Allow your React frontend origin
+origins = [
+   "*"
+]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to frontend URL in prod
+    allow_origins=origins,  # <-- allow frontend origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
