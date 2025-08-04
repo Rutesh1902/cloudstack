@@ -4,7 +4,7 @@ from services import file_ops
 from fastapi import APIRouter, Query, HTTPException
 from services import file_ops
 from fastapi.responses import FileResponse
-router = APIRouter(prefix="/files", tags=["F    iles"])
+router = APIRouter(prefix="/files", tags=["Files"])
 
 @router.get("/")
 def list_files(path: str = ""):
