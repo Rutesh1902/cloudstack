@@ -1,16 +1,25 @@
 from fastapi import APIRouter, UploadFile, File, Depends, Body, Query
 from services import file_ops
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from services import file_ops
-
-router = APIRouter(prefix="/files", tags=["Files"])
+from fastapi.responses import FileResponse
+router = APIRouter(prefix="/files", tags=["F    iles"])
 
 @router.get("/")
 def list_files(path: str = ""):
     return {"files":  file_ops.list_all_files(path)}
 
 
+@router.get("/serve")
+def serve_file(path: str):
+    safe_path = path.lstrip("/")  #
+    abs_path = file_ops.BASE_DIR / safe_path  # ✅ Ensure BASE_DIR is a Path object
+
+    if not abs_path.exists() or not abs_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(abs_path)
 
 @router.post("/upload")
 async def upload_files(path: str = "", files: list[UploadFile] = File(...)):
