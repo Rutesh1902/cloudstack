@@ -62,29 +62,13 @@ useEffect(() => {
   const isVideo = (filename) => /\.(mp4|webm|mov|avi|mkv)$/i.test(filename);
 
   return (
-    <div style={{ padding: '1rem' }}>
-      {/* Back button */}
-      {currentPath && (
-        <div
-          style={{
-            background: '#333',
-            padding: '1rem',
+    <div style={{ padding: '0.7rem',
             borderRadius: '10px',
+            display: 'inline-block',  
             cursor: 'pointer',
-            textAlign: 'center',
-            marginBottom: '1rem'
-          }}
-          onClick={() => {
-            const parentPath = currentPath.split('/').slice(0, -1).join('/');
-            if (parentPath !== currentPath) {
-              setFiles([]); // ✅ Also clear here to prevent stale serve calls
-              setCurrentPath(parentPath);
-            }
-          }}
-        >
-          ⬅ Back
-        </div>
-      )}
+            textAlign: 'left',
+            marginBottom: '1rem' }}>
+
 
       {/* File grid */}
       <div
@@ -175,7 +159,7 @@ useEffect(() => {
         setContextMenu(null);
       }}
     >
-      📥 Download
+       Download
     </div>
 
     <div
@@ -186,7 +170,7 @@ useEffect(() => {
         setContextMenu(null);
       }}
     >
-      ✏️ Rename
+       Rename
     </div>
 
     <div
@@ -197,7 +181,7 @@ useEffect(() => {
         setContextMenu(null);
       }}
     >
-      🗑 Delete
+      Delete
     </div>
   </div>
 )}

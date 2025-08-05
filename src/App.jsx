@@ -6,7 +6,7 @@ import LoginPage from './components/LoginPage';
 import FileGrid from './components/FileGrid';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
-
+import SearchHeader from './components/Search'; 
 function App() {
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem('user')) || null
@@ -14,6 +14,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('All Files'); // 👈 track clicked section
   const [currentPath, setCurrentPath] = useState('');
+  const [files, setFiles] = useState([]);
 
   const handleLoginSuccess = (username) => {
     const userData = { username };
@@ -47,8 +48,21 @@ function App() {
           height: 'calc(100vh - 60px)',
         }}
       >
+          <SearchHeader
+            currentPath={currentPath}
+            setCurrentPath={setCurrentPath}
+            setFiles={setFiles}
+          />
+
+
           {activeSection === 'All Files' && (
-            <FileGrid currentPath={currentPath} setCurrentPath={setCurrentPath} />
+            <FileGrid
+              currentPath={currentPath}
+              setCurrentPath={setCurrentPath}
+              files={files}
+              setFiles={setFiles}
+            />
+
           )}
           {/* You can add more conditionals here if needed for other sections */}
       </div>
