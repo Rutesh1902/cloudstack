@@ -57,9 +57,12 @@ useEffect(() => {
   const ext = name.includes('.') ? '.' + name.split('.').pop() : '';
   return name.slice(0, maxLength - ext.length - 3) + '...' + ext;
 };
+    const [renamingFile, setRenamingFile] = useState(null);
+    const [newName, setNewName] = useState("");
 
   const isImage = (filename) => /\.(jpg|jpeg|png|webp|gif)$/i.test(filename);
   const isVideo = (filename) => /\.(mp4|webm|mov|avi|mkv)$/i.test(filename);
+  const [hovered, setHovered] = useState(null);
 
   return (
     <div style={{ padding: '0.7rem',
@@ -88,6 +91,7 @@ useEffect(() => {
           </div>
         ) : (
           files.map((file) => (
+
             <div
               key={file.name}
               style={{
@@ -109,7 +113,7 @@ useEffect(() => {
 
             >
               {file.is_dir ? (
-                <div style={{ fontSize: '4rem' }}>📁</div>
+                <div style={{ fontSize: '4rem' }}>📂</div>
               ) : isImage(file.name) ? (
                 <img
                   src={`/files/serve?path=${encodeURIComponent(currentPath + '/' + file.name)}`}
@@ -142,6 +146,7 @@ useEffect(() => {
       position: 'absolute',
       top: contextMenu.y,
       left: contextMenu.x,
+      textAlign: 'left',
       background: '#333',
       padding: '0.5rem',
       borderRadius: '8px',
@@ -149,40 +154,61 @@ useEffect(() => {
       color: 'white',
       boxShadow: '0 0 10px rgba(0,0,0,0.5)'
     }}
-    onClick={() => setContextMenu(null)} // closes on click
+    onClick={() => setContextMenu(null)}
   >
-    <div
-      style={{ padding: '0.25rem 1rem', cursor: 'pointer' }}
-      onClick={(e) => {
-        e.stopPropagation();
-        alert(`Download ${contextMenu.file.name}`);
-        setContextMenu(null);
-      }}
-    >
-       Download
-    </div>
+    {['open','download', 'rename', 'delete'].map(action => (
+      <div
+        key={action}
+        style={{
+          padding: '0.25rem 1rem',
+          cursor: 'pointer',
+          backgroundColor: hovered === action ? '#555' : 'transparent',
+          borderRadius: '4px'
+        }}
+        onMouseEnter={() => setHovered(action)}
+        onMouseLeave={() => setHovered(null)}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (action === 'download') {
+                  const link = document.createElement('a');
+                link.href = `/files/serve?path=${encodeURIComponent(currentPath + '/' + contextMenu.file.name)}`;
+                link.download = contextMenu.file.name;  // This tells the browser to download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+          }
+          if (action === 'open'){
+              window.open(`/files/serve?path=${encodeURIComponent(currentPath + '/' + contextMenu.file.name)}`, '_blank');
+          }
+          if (action === 'rename') {
+              const newName = prompt("Enter new name", contextMenu.file.name);
+              if (!newName || newName === contextMenu.file.name) return;
 
-    <div
-      style={{ padding: '0.25rem 1rem', cursor: 'pointer' }}
-      onClick={(e) => {
-        e.stopPropagation();
-        alert(`Rename ${contextMenu.file.name}`);
-        setContextMenu(null);
-      }}
-    >
-       Rename
-    </div>
+              axios.post('/files/rename', null, {
+                params: {
+                  old_path: currentPath + '/' + contextMenu.file.name,
+                  new_name: newName
+                }
+              })
+              .then(() => {
+                fileCache.current.delete(currentPath);
+                setContextMenu(null);
+                setFiles(files.map(f =>
+                  f.name === contextMenu.file.name ? { ...f, name: newName } : f
+                ));
+              })
+              .catch(err => {
+                console.error('Rename failed:', err);
+                alert('Rename failed');
+              });
+            }
 
-    <div
-      style={{ padding: '0.25rem 1rem', cursor: 'pointer' }}
-      onClick={(e) => {
-        e.stopPropagation();
-        alert(`Delete ${contextMenu.file.name}`);
-        setContextMenu(null);
-      }}
-    >
-      Delete
-    </div>
+          setContextMenu(null);
+        }}
+      >
+        {action}
+      </div>
+    ))}
   </div>
 )}
 
