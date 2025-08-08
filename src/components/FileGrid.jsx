@@ -114,25 +114,55 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
           <div style={{ color: 'gray', gridColumn: '1 / -1', textAlign: 'center' }}>no files found!</div>
         ) : (
           files.map((file) => (
+          
             <div
               key={file.name}
               style={{
                 background: selectedFiles.includes(file.name) ? '#444' : '#282828',
                 padding: '1rem',
                 borderRadius: '10px',
-                cursor: file.is_dir ? 'pointer' : 'default',
+                cursor: 'pointer',
                 textAlign: 'center',
-                border: selectedFiles.includes(file.name) ? '2px solid #4fa3ff' : 'none'
+                border: selectedFiles.includes(file.name) ? '2px solid #4fa3ff' : 'none',
+                transition: 'transform 0.15s ease, background-color 0.15s ease',
               }}
-              onClick={(e) => handleFileClick(file, e)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.background = selectedFiles.includes(file.name)
+                  ? '#555'
+                  : '#303030';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.background = selectedFiles.includes(file.name)
+                  ? '#444'
+                  : '#282828';
+              }}
+              onClick={(e) => {
+                if (e.ctrlKey || e.metaKey) {
+                  setSelectedFiles(prev =>
+                    prev.includes(file.name)
+                      ? prev.filter(f => f !== file.name)
+                      : [...prev, file.name]
+                  );
+                }
+              }}
+              onDoubleClick={() => {
+                if (file.is_dir) {
+                  handleFolderClick(file.name);
+                } else {
+                  window.location.href = `/files/serve?path=${encodeURIComponent(currentPath + '/' + file.name)}`;
+                }
+              }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 if (!selectedFiles.includes(file.name)) {
-                  setSelectedFiles([file.name]); // Right click selects if not already
+                  setSelectedFiles([file.name]);
                 }
                 setContextMenu({ x: e.pageX, y: e.pageY, file });
               }}
             >
+
               {file.is_dir ? (
                 <div style={{ fontSize: '4rem' }}>📂</div>
               ) : isImage(file.name) ? (
@@ -160,91 +190,101 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
         )}
       </div>
 
-      {/* Context menu */}
-      {contextMenu && (
-        <div
-          style={{
-            position: 'absolute',
-            top: contextMenu.y,
-            left: contextMenu.x,
-            textAlign: 'left',
-            background: '#333',
-            padding: '0.5rem',
-            borderRadius: '8px',
-            zIndex: 1000,
-            color: 'white',
-            boxShadow: '0 0 10px rgba(0,0,0,0.5)'
-          }}
-        >
-          {['open', 'download', 'rename', 'delete'].map(action => (
-            <div
-              key={action}
-              style={{
-                padding: '0.25rem 1rem',
-                cursor: 'pointer',
-                backgroundColor: hovered === action ? '#555' : 'transparent',
-                borderRadius: '4px'
-              }}
-              onMouseEnter={() => setHovered(action)}
-              onMouseLeave={() => setHovered(null)}
-              onClick={(e) => {
-                e.stopPropagation();
+{/* Context menu */}
+{contextMenu && (
+  <div
+    style={{
+      position: 'absolute',
+      top: contextMenu.y,
+      left: contextMenu.x,
+      background: 'rgba(40, 40, 40, 0.9)',
+      backdropFilter: 'blur(6px)',
+      borderRadius: '10px',
+      padding: '0.5rem 0',
+      zIndex: 1000,
+      color: 'white',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+      minWidth: '150px',
+      animation: 'fadeIn 0.15s ease-out',
+    }}
+  >
+    {['open', 'download', 'rename', 'delete'].map((action, index) => (
+      <div
+        key={action}
+        style={{
+          padding: '0.5rem 1rem',
+          cursor: 'pointer',
+          background: hovered === action
+            ? 'linear-gradient(90deg, #555, #333)'
+            : 'transparent',
+          transition: 'background 0.15s ease',
+          borderTop: index > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+        }}
+        onMouseEnter={() => setHovered(action)}
+        onMouseLeave={() => setHovered(null)}
+        onClick={(e) => {
+          e.stopPropagation();
 
-                // Bulk delete
-                if (action === 'delete') {
-                  if (!window.confirm(`Delete ${selectedFiles.length} file(s)?`)) return;
-                  axios.post('/files/delete', {
-                    files: selectedFiles.map(name => currentPath + '/' + name)
-                  }).then(() => {
-                    setFiles(files.filter(f => !selectedFiles.includes(f.name)));
-                    setSelectedFiles([]);
-                  });
-                }
+          // Bulk delete
+          if (action === 'delete') {
+            if (!window.confirm(`Delete ${selectedFiles.length} file(s)?`)) return;
+            axios.post('/files/delete', {
+              files: selectedFiles.map(name => currentPath + '/' + name)
+            }).then(() => {
+              setFiles(files.filter(f => !selectedFiles.includes(f.name)));
+              setSelectedFiles([]);
+            });
+          }
 
-                // Bulk download
-                if (action === 'download') {
-                  if (selectedFiles.length > 1) {
-                    window.open(`/files/download-zip?files=${encodeURIComponent(JSON.stringify(selectedFiles.map(name => currentPath + '/' + name)))}`);
-                  } else {
-                    const link = document.createElement('a');
-                    link.href = `/files/serve?path=${encodeURIComponent(currentPath + '/' + contextMenu.file.name)}`;
-                    link.download = contextMenu.file.name;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }
+          // Bulk download
+          if (action === 'download') {
+            if (selectedFiles.length > 1) {
+              window.open(`/files/download-zip?files=${encodeURIComponent(JSON.stringify(selectedFiles.map(name => currentPath + '/' + name)))}`);
+            } else {
+              const link = document.createElement('a');
+              link.href = `/files/serve?path=${encodeURIComponent(currentPath + '/' + contextMenu.file.name)}`;
+              link.download = contextMenu.file.name;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }
+          }
 
-                // Open file
-                if (action === 'open') {
-                  window.open(`/files/serve?path=${encodeURIComponent(currentPath + '/' + contextMenu.file.name)}`, '_blank');
-                }
+          // Open file or folder
+          if (action === 'open') {
+            if (contextMenu.file.is_dir) {
+              handleFolderClick(contextMenu.file.name);
+            } else {
+              window.location.href = `/files/serve?path=${encodeURIComponent(currentPath + '/' + contextMenu.file.name)}`;
+            }
+          }
 
-                // Rename single file
-                if (action === 'rename' && selectedFiles.length === 1) {
-                  const newName = prompt("Enter new name", contextMenu.file.name);
-                  if (!newName || newName === contextMenu.file.name) return;
-                  axios.post('/files/rename', null, {
-                    params: {
-                      old_path: currentPath + '/' + contextMenu.file.name,
-                      new_name: newName
-                    }
-                  }).then(() => {
-                    fileCache.current.delete(currentPath);
-                    setFiles(files.map(f =>
-                      f.name === contextMenu.file.name ? { ...f, name: newName } : f
-                    ));
-                  }).catch(() => alert('Rename failed'));
-                }
+          // Rename single file
+          if (action === 'rename' && selectedFiles.length === 1) {
+            const newName = prompt("Enter new name", contextMenu.file.name);
+            if (!newName || newName === contextMenu.file.name) return;
+            axios.post('/files/rename', null, {
+              params: {
+                old_path: currentPath + '/' + contextMenu.file.name,
+                new_name: newName
+              }
+            }).then(() => {
+              fileCache.current.delete(currentPath);
+              setFiles(files.map(f =>
+                f.name === contextMenu.file.name ? { ...f, name: newName } : f
+              ));
+            }).catch(() => alert('Rename failed'));
+          }
 
-                setContextMenu(null);
-              }}
-            >
-              {action}
-            </div>
-          ))}
-        </div>
-      )}
+          setContextMenu(null);
+        }}
+      >
+        {action}
+      </div>
+    ))}
+  </div>
+)}
+
     </div>
   );
 }

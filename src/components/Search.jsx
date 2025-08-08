@@ -1,49 +1,5 @@
-// // src/components/DriveHeader.jsx
-// import { FiSearch } from 'react-icons/fi'; // Make sure you have react-icons installed
-
-// export default function SearchHeader() {
-//   return (
-//     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-//       <h1 style={{ fontSize: '1.5rem', fontWeight: '500' }}>Welcome to CloudStack</h1>
-//       <div
-//         style={{
-//           marginTop: '1rem',
-//           display: 'flex',
-//           alignItems: 'center',
-//           justifyContent: 'center',
-//         }}
-//       >
-//         <div
-//           style={{
-//             backgroundColor: '#333',
-//             borderRadius: '9999px',
-//             padding: '0.75rem 1rem',
-//             width: '60%',
-//             display: 'flex',
-//             alignItems: 'center',
-//           }}
-//         >
-//           <FiSearch style={{ marginRight: '0.5rem', color: 'white' }} />
-//           <input
-//             type="text"
-//             placeholder="Search in Cloudstack"
-//             style={{
-//               background: 'transparent',
-//               border: 'none',
-//               outline: 'none',
-//               width: '100%',
-//               fontSize: '1rem',
-//               color: 'white',
-//             }}
-//           />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 // src/components/Search.jsx
-// src/components/Search.jsx
-import { FiSearch } from 'react-icons/fi';
+import { FiArrowLeft, FiSearch } from 'react-icons/fi';
 
 export default function SearchHeader({ currentPath, setCurrentPath, setFiles }) {
   const handleBack = () => {
@@ -55,13 +11,7 @@ export default function SearchHeader({ currentPath, setCurrentPath, setFiles }) 
   };
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      {/* Header */}
-      <h1 style={{ fontSize: '1.5rem', fontWeight: '500', textAlign: 'center' }}>
-        Welcome to CloudStack
-      </h1>
-
-      {/* Search Row */}
+    <div style={{ marginBottom: '1rem' }}>
       <div
         style={{
           position: 'relative',
@@ -81,20 +31,33 @@ export default function SearchHeader({ currentPath, setCurrentPath, setFiles }) 
               left: 0,
               background: '#333',
               color: 'white',
-              padding: '0.8rem',
-              borderRadius: '20px',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: '500',
-              whiteSpace: 'nowrap',
               marginLeft: '1rem',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+              transition: 'transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.background = '#444';
+              e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.background = '#333';
+              e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
             }}
           >
-            ⬅ Back
+            <FiArrowLeft size={20} />
           </div>
         )}
 
-        {/* Search Bar (always centered) */}
+        {/* Search Bar */}
         <div
           style={{
             backgroundColor: '#333',
@@ -104,6 +67,15 @@ export default function SearchHeader({ currentPath, setCurrentPath, setFiles }) 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            transition: 'transform 0.15s ease, background-color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.background = '#3a3a3a';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.background = '#333';
           }}
         >
           <FiSearch style={{ marginRight: '0.5rem', color: 'white' }} />
