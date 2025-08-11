@@ -10,34 +10,45 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
   const [contextMenu, setContextMenu] = useState(null);
   const [hovered, setHovered] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
-
+  const [renamingFile, setRenamingFile] = useState(null); // stores file name currently being renamed
+  const [newName, setNewName] = useState("");
+  const measureRef = useRef();
   useEffect(() => {
     const handleClickOutside = () => setContextMenu(null);
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
+  
+  
+// Trigger rename mode on name click
+const handleNameClick = (file) => {
+  setRenamingFile(file.name);
+  setNewName(file.name);
+};
 
-  const handleFileClick = (file, e) => {
-    if (e.ctrlKey || e.metaKey) {
-      setSelectedFiles(prev =>
-        prev.includes(file.name)
-          ? prev.filter(f => f !== file.name)
-          : [...prev, file.name]
-      );
-    } else if (e.shiftKey && selectedFiles.length > 0) {
-      const lastIndex = files.findIndex(f => f.name === selectedFiles[selectedFiles.length - 1]);
-      const currentIndex = files.findIndex(f => f.name === file.name);
-      const range = files.slice(
-        Math.min(lastIndex, currentIndex),
-        Math.max(lastIndex, currentIndex) + 1
-      ).map(f => f.name);
-      setSelectedFiles(prev => [...new Set([...prev, ...range])]);
-    } else {
-      setSelectedFiles([file.name]);
-      if (file.is_dir) handleFolderClick(file.name);
-    }
-  };
-
+// Save the rename
+const saveRename = async (file) => {
+  if (!newName.trim() || newName === file.name) {
+    setRenamingFile(null);
+    return;
+  }
+  try {
+    await axios.post("files/rename", {
+      old_name: file.name,
+      new_name: newName.trim(),
+      path: currentPath
+    });
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.name === file.name ? { ...f, name: newName.trim() } : f
+      )
+    );
+    setRenamingFile(null);
+  } catch (err) {
+    alert("Rename failed");
+    console.error(err);
+  }
+};
   useEffect(() => {
     const cachedFiles = fileCache.current.get(currentPath);
     if (cachedFiles !== undefined) {
@@ -81,7 +92,7 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
   return (
     <div style={{ padding: '0.7rem', borderRadius: '10px', display: 'inline-block', textAlign: 'left', marginBottom: '1rem' }}>
       {/* Breadcrumb */}
-      <div style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#ccc' }}>
+      <div style={{ marginBottom: '1rem', fontSize: '1.4rem', color: '#ccc' }}>
         <span style={{ cursor: 'pointer', color: '#4fa3ff' }} onClick={() => setCurrentPath('')}>
           📂 Home
         </span>
@@ -169,8 +180,8 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
                 <img
                   src={`/files/serve?path=${encodeURIComponent(currentPath + '/' + file.name)}`}
                   alt={file.name}
-                  style={{
-                    width: '100%',
+                  style={{  
+                    width: '100%',  
                     maxHeight: '150px',
                     objectFit: 'cover',
                     borderRadius: '8px'
@@ -182,9 +193,76 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
                   style={{ width: '100%', maxHeight: '150px', borderRadius: '8px' }}
                 />
               ) : (
-                <div style={{ fontSize: '2rem' }}>📄</div>
+                <div style={{ fontSize: '4rem' }}>📄</div>
               )}
-              <div style={{ marginTop: '0.5rem', wordBreak: 'break-word' }}>{truncateName(file.name)}</div>
+              <div style={{ marginTop: '0.5rem', wordBreak: 'break-word' }}>
+  {renamingFile === file.name ? (
+    <>
+      {/* Hidden measuring span */}
+      <span
+        ref={measureRef}
+        style={{
+          position: "absolute",
+          visibility: "hidden",
+          whiteSpace: "pre",
+          fontSize: "0.9rem",
+          fontFamily: "inherit",
+          padding: "4px 6px"
+        }}
+      >
+        {newName || " "} {/* prevent zero width */}
+      </span>
+
+      {/* Editable input */}
+        <textarea
+          value={newName}
+          autoFocus
+          onChange={(e) => setNewName(e.target.value)}
+          onBlur={() => saveRename(file)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              saveRename(file);
+            }
+            if (e.key === "Escape") setRenamingFile(null);
+          }}
+          style={{
+            width: "100%",                // ✅ matches thumbnail/card width
+            minHeight: "1.8em",            // ✅ matches single line height
+            padding: "2px 4px",            // ✅ small padding like Explorer
+            borderRadius: "4px",           // ✅ subtle round corners
+            border: "1px solid #4fa3ff",
+            background: "#1e1e1e",
+            color: "white",
+            textAlign: "center",
+            whiteSpace: "normal",          // ✅ wraps long text
+            wordBreak: "break-word",
+            outline: "none",
+            boxShadow: "0 0 0 1px rgba(79, 163, 255, 0.5)",
+            resize: "none",
+            fontSize: "0.85rem",
+            fontFamily: "inherit",
+            overflow: "hidden",
+            lineHeight: "1.2em",
+          }}
+          rows={Math.min(Math.ceil(newName.length / 20), 3)} // ✅ max 3 lines
+        />
+
+    </>
+
+                ) : (
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNameClick(file);
+                    }}
+                    style={{ cursor: "text" }}
+                  >
+                    {truncateName(file.name)}
+                  </span>
+                )}
+              </div>
+
             </div>
           ))
         )}
@@ -260,21 +338,13 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
           }
 
           // Rename single file
-          if (action === 'rename' && selectedFiles.length === 1) {
-            const newName = prompt("Enter new name", contextMenu.file.name);
-            if (!newName || newName === contextMenu.file.name) return;
-            axios.post('/files/rename', null, {
-              params: {
-                old_path: currentPath + '/' + contextMenu.file.name,
-                new_name: newName
-              }
-            }).then(() => {
-              fileCache.current.delete(currentPath);
-              setFiles(files.map(f =>
-                f.name === contextMenu.file.name ? { ...f, name: newName } : f
-              ));
-            }).catch(() => alert('Rename failed'));
-          }
+            if (action === 'rename' && selectedFiles.length === 1) {
+              // Trigger inline rename input
+              setRenamingFile(contextMenu.file.name);
+              setNewName(contextMenu.file.name);
+              setContextMenu(null); // close menu so it doesn't block input
+            }
+
 
           setContextMenu(null);
         }}
