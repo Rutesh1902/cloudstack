@@ -6,12 +6,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/auth': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:1111',
         changeOrigin: true,
         secure: false,
       },
       '/files': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:1111',
         changeOrigin: true,
         secure: false,
       },
