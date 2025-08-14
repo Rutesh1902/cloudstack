@@ -33,7 +33,7 @@ export default function Navbar({ onLogout, toggleSidebar }) {
       >
         ☰
       </button>
-       <h1 style={{ textAlign: 'center', marginBottom: '1rem',  fontSize: '2rem', }}>CloudStack </h1>
+       <h1 style={{ textAlign: 'center', marginBottom: '0.1rem',  fontSize: '2rem', }}>CloudStack </h1>
       <button
         onClick={onLogout}
         style={{

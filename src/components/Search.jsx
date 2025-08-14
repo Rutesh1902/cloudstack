@@ -59,38 +59,44 @@ export default function SearchHeader({ currentPath, setCurrentPath, setFiles }) 
 
         {/* Search Bar */}
         <div
-          style={{
-            backgroundColor: '#333',
-            borderRadius: '9999px',
-            padding: '0.75rem 1rem',
-            width: '60%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'transform 0.15s ease, background-color 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.02)';
-            e.currentTarget.style.background = '#3a3a3a';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.background = '#333';
-          }}
-        >
-          <FiSearch style={{ marginRight: '0.5rem', color: 'white' }} />
-          <input
-            type="text"
-            placeholder="Search in Cloudstack"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              width: '100%',
-              fontSize: '1rem',
-              color: 'white',
-            }}
-          />
+         style={{
+    background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))",
+    borderRadius: "9999px",
+    padding: "0.75rem 1rem",
+    width: "60%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid rgba(255,255,255,0.15)",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    transition: "transform 0.2s ease, background 0.3s ease, box-shadow 0.2s ease",
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = "scale(1.02)";
+    e.currentTarget.style.background = "linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08))";
+    e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.35)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = "scale(1)";
+    e.currentTarget.style.background = "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))";
+    e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.25)";
+  }}
+>
+  <FiSearch style={{ marginRight: "0.5rem", color: "rgba(255,255,255,0.85)" }} />
+  <input
+    type="text"
+    placeholder="Search in Cloudstack"
+    style={{
+      background: "transparent",
+      border: "none",
+      outline: "none",
+      width: "100%",
+      fontSize: "1rem",
+      color: "white",
+    }}
+  />
         </div>
       </div>
     </div>
