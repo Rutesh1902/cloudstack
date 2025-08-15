@@ -182,35 +182,46 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
                 setContextMenu({ x: e.pageX, y: e.pageY, file });
               }}
             >
+<div
+  style={{
+    width: '100%',
+    height: '130px',       // fixed height
+    overflow: 'hidden',    // hide overflow corners
+    // marginBottom: '0.1rem'
+  }}
+>
+
               {/* Thumbnail */}
               {file.is_dir ? (
-                <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>📂</div>
+                <div style={{ fontSize: '5rem', marginBottom: '3rem' }}>📂</div>
               ) : isImage(file.name) ? (
-                <img
+                <img 
                   src={`/files/serve?path=${encodeURIComponent(currentPath + '/' + file.name)}`}
                   alt={file.name}
                   style={{
-                    width: '100%',
-                    maxHeight: '120px',
-                    objectFit: 'cover',
-                    borderRadius: '8px',
-                    marginBottom: '0.5rem',
+                     width: '100%',        // fill card width
+                      height: '100px',      // fixed height for consistency
+                      objectFit: 'contain', // shrink but keep aspect ratio
+                      marginBottom: '0.5rem',
+                     
                   }}
                 />
               ) : isVideo(file.name) ? (
                 <video
                   src={`/files/serve?path=${encodeURIComponent(currentPath + '/' + file.name)}`}
                   style={{
-                    width: '100%',
-                    maxHeight: '120px',
-                    borderRadius: '8px',
+                     width: '100%',        // fill card width
+                      height: '100px',      // fixed height for consistency
+                    objectFit: 'contain',
+
                     marginBottom: '0.5rem',
+                    // optional, to fill empty space
                   }}
                 />
               ) : (
-                <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>📄</div>
+                <div style={{ fontSize: '5rem', marginBottom: '3rem' }}>📄</div>
               )}
-
+</div>
               {/* File name / rename */}
               {renamingFile === file.name ? (
                 <>
@@ -325,15 +336,25 @@ export default function FileGrid({ currentPath, setCurrentPath }) {
               onMouseLeave={() => setHovered(null)}
               onClick={(e) => {
                 e.stopPropagation();
-                if (action === 'delete') {
-                  if (!window.confirm(`Delete ${selectedFiles.length} file(s)?`)) return;
-                  axios.post('/files/delete', {
-                    files: selectedFiles.map(name => currentPath + '/' + name)
-                  }).then(() => {
-                    setFiles(files.filter(f => !selectedFiles.includes(f.name)));
-                    setSelectedFiles([]);
-                  });
-                }
+if (action === 'delete') {
+  if (!window.confirm(`Delete ${selectedFiles.length} file(s)?`)) return;
+
+  axios.delete('/files/', {
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    data: {
+      files: selectedFiles.map(name => currentPath + '/' + name)
+    }
+  }).then(() => {
+    setFiles(files.filter(f => !selectedFiles.includes(f.name)));
+    setSelectedFiles([]);
+  }).catch(err => {
+    console.error(err.response?.data || err.message);
+  });
+}
+
+
                 if (action === 'download') {
                   if (selectedFiles.length > 1) {
                     window.open(`/files/download-zip?files=${encodeURIComponent(JSON.stringify(selectedFiles.map(name => currentPath + '/' + name)))}`);
