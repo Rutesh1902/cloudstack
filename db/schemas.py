@@ -20,3 +20,6 @@ class UserOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class FileDeleteRequest(BaseModel):
+    files: list[str]
