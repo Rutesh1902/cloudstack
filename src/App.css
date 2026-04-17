@@ -203,18 +203,20 @@ textarea {
 
 .app-content {
   margin-top: 60px;
-  transition: margin-left 0.25s ease;
+  transition: padding-left 0.25s ease, margin-left 0.25s ease;
   padding: 1.5rem;
 }
 
 .app-content.sidebar-open {
-  margin-left: 250px;
+  margin-left: 0;
+  padding-left: calc(1.5rem + 250px);
 }
 
 .workspace {
   max-width: 1400px;
   margin: 0 auto;
   padding-bottom: 2rem;
+  width: min(100%, 1400px);
 }
 
 .search-panel {
