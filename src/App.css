@@ -23,9 +23,6 @@ textarea {
   font: inherit;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 .app-shell {
   min-height: 100vh;
@@ -201,8 +198,17 @@ textarea {
   z-index: 54;
 }
 
+.app-shell {
+  min-height: 100vh;
+  width: 100%;
+  background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(79, 70, 229, 0.14), transparent 28%),
+    linear-gradient(180deg, #020617 0%, #071326 100%);
+}
+
 .app-content {
   margin-top: 60px;
+  width: 100%;
   transition: padding-left 0.25s ease, margin-left 0.25s ease;
   padding: 1.5rem;
 }
