@@ -1,26 +1,20 @@
 // src/components/Search.jsx
 import { FiArrowLeft, FiSearch } from 'react-icons/fi';
 
-export default function SearchHeader({ currentPath, setCurrentPath, searchQuery, setSearchQuery }) {
-  const handleBack = () => {
-    const parentPath = currentPath.split('/').slice(0, -1).join('/');
-    if (parentPath !== currentPath) {
-      setCurrentPath(parentPath);
-    }
-  };
+export default function SearchHeader({ path, onBack, searchQuery, setSearchQuery }) {
 
   return (
     <div className="search-panel">
       <div className="search-row">
         <div className="search-left">
-          {currentPath ? (
-            <button type="button" className="icon-button" onClick={handleBack}>
+          {path ? (
+            <button type="button" className="icon-button" onClick={onBack}>
               <FiArrowLeft size={18} />
             </button>
           ) : (
             <div className="path-badge">Home</div>
           )}
-          <div className="path-label">{currentPath || 'Home'}</div>
+          <div className="path-label">{path || 'Home'}</div>
         </div>
 
         <div className="search-input-wrapper">

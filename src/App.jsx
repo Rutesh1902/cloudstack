@@ -1,63 +1,38 @@
-
-// src/App.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './App.css';
-import LoginPage from './components/LoginPage';
+import api, { clearTokens, getTokens } from './api';
 import FileGrid from './components/FileGrid';
-import Sidebar from './components/Sidebar';
+import LoginPage from './components/LoginPage';
 import Navbar from './components/Navbar';
 import SearchHeader from './components/Search';
+import Sidebar from './components/Sidebar';
 
 function App() {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem('user')) || null
-  );
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('cloudstack_user') || 'null'));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('All Files');
-  const [currentPath, setCurrentPath] = useState('');
+  const [breadcrumbs, setBreadcrumbs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const handleLoginSuccess = (username) => {
-    const userData = { username };
+  const handleLoginSuccess = (userData) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('cloudstack_user', JSON.stringify(userData));
   };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    const tokens = getTokens();
+    try { if (tokens?.refresh_token) await api.post('/auth/logout', { refresh_token: tokens.refresh_token }); }
+    finally { clearTokens(); localStorage.removeItem('cloudstack_user'); setUser(null); setBreadcrumbs([]); }
   };
-
-  const toggleSidebar = () => setSidebarOpen((value) => !value);
-
+  const selectSection = (section) => { setActiveSection(section); if (section !== 'Trash') setBreadcrumbs([]); };
+  const currentFolderId = breadcrumbs.at(-1)?.id ?? null;
   if (!user) return <LoginPage onLoginSuccess={handleLoginSuccess} />;
-
   return (
     <div className="app-shell">
-      <Navbar onLogout={handleLogout} toggleSidebar={toggleSidebar} user={user} />
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        toggleSidebar={toggleSidebar}
-        onMenuClick={setActiveSection}
-        activeSection={activeSection}
-      />
-
-      <main className={`app-content ${sidebarOpen ? 'sidebar-open' : ''}`}>
-        <div className="workspace">
-          <SearchHeader
-            currentPath={currentPath}
-            setCurrentPath={setCurrentPath}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
-          <FileGrid
-            currentPath={currentPath}
-            setCurrentPath={setCurrentPath}
-            activeSection={activeSection}
-            searchQuery={searchQuery}
-          />
-        </div>
-      </main>
+      <Navbar onLogout={handleLogout} toggleSidebar={() => setSidebarOpen((value) => !value)} user={user} />
+      <Sidebar sidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(false)} onMenuClick={selectSection} activeSection={activeSection} />
+      <main className={`app-content ${sidebarOpen ? 'sidebar-open' : ''}`}><div className="workspace">
+        <SearchHeader path={breadcrumbs.map((item) => item.name).join(' / ')} onBack={() => setBreadcrumbs((items) => items.slice(0, -1))} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <FileGrid currentFolderId={currentFolderId} breadcrumbs={breadcrumbs} onOpenFolder={(folder) => setBreadcrumbs((items) => [...items, folder])} onGoToBreadcrumb={(index) => setBreadcrumbs((items) => items.slice(0, index + 1))} onGoHome={() => setBreadcrumbs([])} activeSection={activeSection} searchQuery={searchQuery} />
+      </div></main>
     </div>
   );
 }
