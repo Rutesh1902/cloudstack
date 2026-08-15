@@ -1,14 +1,12 @@
-from pydantic import BaseModel
-#FILE SCHEMAS
-class FileInfo(BaseModel):
-    name: str
-    size: int
-    modified: str
+from datetime import datetime
+from typing import Literal
 
-#ACCOUT SCHEMAS
+from pydantic import BaseModel, Field
+
+
 class UserCreate(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_.-]+$")
+    password: str = Field(min_length=12, max_length=256)
 
 class UserLogin(BaseModel):
     username: str
@@ -17,9 +15,41 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
+    is_admin: bool
+    quota_bytes: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
-class FileDeleteRequest(BaseModel):
-    files: list[str]
+
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class CreateFolderRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    parent_id: str | None = None
+
+
+class UpdateNodeRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    parent_id: str | None = None
+
+
+class NodeOut(BaseModel):
+    id: str
+    parent_id: str | None
+    name: str
+    kind: Literal["file", "folder"]
+    size: int | None
+    mime_type: str | None
+    checksum: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

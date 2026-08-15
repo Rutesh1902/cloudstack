@@ -1,34 +1,26 @@
 from fastapi import FastAPI
-from api import files, auth
-from db.connection import engine
-from db.models import Base  # 👈 import your real Base that includes the models
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # ✅ Add this
-# Create the tables
-Base.metadata.create_all(bind=engine)
 
-import uvicorn
+from api import auth, files
+from config import settings
 
-app = FastAPI()
-
-# ✅ Mount your media directory (adjust 'cloudstack' to your actual folder)
-app.mount("/preview", StaticFiles(directory="C:/cloudtstack"), name="preview")
-# Allow your React frontend origin
-origins = [
-   "*"
-]
-
-
+app = FastAPI(title="CloudStack API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # <-- allow frontend origin
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(files.router, prefix="/api/v1")
 
-app.include_router(files.router)
-app.include_router(auth.router)
+
+@app.get("/health", tags=["Operations"])
+def health():
+    return {"status": "ok"}
+
 
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=1111, reload=True)
