@@ -136,6 +136,8 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
 env/
@@ -191,6 +193,21 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# CloudStack runtime data (never commit user files or local databases)
+storage/
+data/
+uploads/
+*.uploading
+*.sqlite3
+*.db
+postgres_data/
+
+# Local logs and test output
+logs/
+*.log
+.pytest_cache/
+test-results/
+
 # PyPI configuration file
 .pypirc
 
@@ -210,3 +227,28 @@ __marimo__/
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/cloudstack.iml
 /.idea/misc.xml
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
