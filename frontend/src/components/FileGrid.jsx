@@ -1,0 +1,351 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import api from "../api";
+import "./FileGrid.css";
+
+const isImage = (name) => /\.(jpg|jpeg|png|webp|gif)$/i.test(name);
+const isVideo = (name) => /\.(mp4|webm|mov|avi|mkv)$/i.test(name);
+const isAudio = (name) => /\.(mp3|wav|aac|flac|ogg)$/i.test(name);
+const isDocument = (name) =>
+  /\.(pdf|docx|doc|xlsx|xls|pptx|ppt|txt)$/i.test(name);
+const isArchive = (name) => /\.(zip|rar|7z|tar|gz)$/i.test(name);
+const formatSize = (bytes = 0) =>
+  bytes < 1024
+    ? `${bytes} B`
+    : bytes < 1024 ** 2
+      ? `${(bytes / 1024).toFixed(1)} KB`
+      : `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+
+export default function FileGrid({
+  currentFolderId,
+  breadcrumbs,
+  onOpenFolder,
+  onGoToBreadcrumb,
+  onGoHome,
+  activeSection,
+  searchQuery,
+}) {
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [selected, setSelected] = useState([]);
+  const [folderName, setFolderName] = useState("");
+  const [renameValue, setRenameValue] = useState("");
+  const [message, setMessage] = useState("");
+  const uploadInput = useRef(null);
+  const trash = activeSection === "Trash";
+  const refreshFiles = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data } = trash
+        ? await api.get("/files/trash/items")
+        : await api.get("/files", {
+            params: currentFolderId ? { parent_id: currentFolderId } : {},
+          });
+      setFiles(data);
+    } catch (err) {
+      setFiles([]);
+      setError(err.response?.data?.detail || "Failed to load files.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    setSelected([]);
+    refreshFiles();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFolderId, activeSection]);
+  const filteredFiles = useMemo(
+    () =>
+      files.filter(
+        (file) =>
+          !searchQuery ||
+          file.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [files, searchQuery],
+  );
+  const chosen = files.filter((file) => selected.includes(file.id));
+  const download = (file) => {
+    const tokens = JSON.parse(localStorage.getItem("cloudstack_tokens"));
+    if (!tokens || !tokens.access_token) {
+      setError("Not authenticated.");
+      return;
+    }
+    const downloadUrl = `/api/v1/files/${file.id}/download?access_token=${tokens.access_token}`;
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  const createFolder = async () => {
+    if (!folderName.trim()) return;
+    try {
+      await api.post("/files/folders", {
+        name: folderName.trim(),
+        parent_id: currentFolderId,
+      });
+      setFolderName("");
+      setMessage("Folder created.");
+      refreshFiles();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Could not create folder.");
+    }
+  };
+  const upload = async (event) => {
+    const uploads = [...(event.target.files || [])];
+    if (!uploads.length) return;
+    const data = new FormData();
+    uploads.forEach((file) => data.append("files", file));
+    if (currentFolderId) data.append("parent_id", currentFolderId);
+    try {
+      await api.post("/files/upload", data);
+      setMessage(`${uploads.length} file(s) uploaded.`);
+      refreshFiles();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Upload failed.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+  const rename = async () => {
+    const file = chosen[0];
+    if (!file || !renameValue.trim()) return;
+    try {
+      await api.patch(`/files/${file.id}`, { name: renameValue.trim() });
+      setRenameValue("");
+      setSelected([]);
+      refreshFiles();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Rename failed.");
+    }
+  };
+  const remove = async () => {
+    if (
+      !chosen.length ||
+      !window.confirm(`Move ${chosen.length} item(s) to trash?`)
+    )
+      return;
+    try {
+      await Promise.all(chosen.map((file) => api.delete(`/files/${file.id}`)));
+      setSelected([]);
+      refreshFiles();
+    } catch {
+      setError("Delete failed.");
+    }
+  };
+  const permanentDelete = async () => {
+    if (
+      !chosen.length ||
+      !window.confirm(
+        `Permanently delete ${chosen.length} item(s)? This cannot be undone.`,
+      )
+    )
+      return;
+    try {
+      await Promise.all(
+        chosen.map((file) => api.delete(`/files/${file.id}/permanent`)),
+      );
+      setSelected([]);
+      refreshFiles();
+    } catch {
+      setError("Permanent delete failed.");
+    }
+  };
+  const restore = async () => {
+    try {
+      await Promise.all(
+        chosen.map((file) => api.post(`/files/${file.id}/restore`)),
+      );
+      setSelected([]);
+      refreshFiles();
+    } catch {
+      setError("Restore failed.");
+    }
+  };
+  return (
+    <section className="file-manager">
+      <div className="file-manager-top">
+        <div>
+          <div className="breadcrumbs">
+            <button className="breadcrumb-link" onClick={onGoHome}>
+              Home
+            </button>
+            {breadcrumbs.map((item, index) => (
+              <span key={item.id}>
+                {" "}
+                /{" "}
+                <button
+                  className="breadcrumb-link"
+                  onClick={() => onGoToBreadcrumb(index)}
+                >
+                  {item.name}
+                </button>
+              </span>
+            ))}
+          </div>
+          <p className="file-manager-meta">
+            {filteredFiles.length} item(s) ·{" "}
+            {trash ? "Trash" : breadcrumbs.at(-1)?.name || "Root"}
+          </p>
+        </div>
+        <div className="file-manager-actions">
+          <button className="button button-secondary" onClick={refreshFiles}>
+            Refresh
+          </button>
+          {trash ? (
+            <>
+              <button
+                className="button button-danger"
+                disabled={!selected.length}
+                onClick={permanentDelete}
+              >
+                Delete Forever
+              </button>
+              <button
+                className="button button-primary"
+                disabled={!selected.length}
+                onClick={restore}
+              >
+                Restore
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="button button-secondary"
+                onClick={() => uploadInput.current?.click()}
+              >
+                Upload
+              </button>
+              <button
+                className="button button-secondary"
+                disabled={chosen.length !== 1}
+                onClick={() => setRenameValue(chosen[0]?.name || "")}
+              >
+                Rename
+              </button>
+              <button
+                className="button button-secondary"
+                disabled={!chosen.length}
+                onClick={() => chosen.forEach(download)}
+              >
+                Download
+              </button>
+              <button
+                className="button button-danger"
+                disabled={!chosen.length}
+                onClick={remove}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="file-manager-grid">
+        <div className="files-panel">
+          {!trash && (
+            <div className="file-panel-toolbar">
+              <div className="folder-create">
+                <input
+                  value={folderName}
+                  onChange={(event) => setFolderName(event.target.value)}
+                  placeholder="New folder name"
+                  className="folder-input"
+                />
+                <button
+                  className="button button-primary"
+                  onClick={createFolder}
+                >
+                  New folder
+                </button>
+              </div>
+            </div>
+          )}
+          {error && <div className="message message-error">{error}</div>}
+          {message && <div className="message message-success">{message}</div>}
+          {renameValue && (
+            <div className="rename-panel">
+              <input
+                className="folder-input"
+                value={renameValue}
+                onChange={(event) => setRenameValue(event.target.value)}
+              />
+              <button className="button button-primary" onClick={rename}>
+                Save
+              </button>
+              <button
+                className="button button-ghost"
+                onClick={() => setRenameValue("")}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          <div className="file-grid">
+            {loading ? (
+              <div className="empty-state">Loading files…</div>
+            ) : (
+              filteredFiles.map((file) => (
+                <button
+                  key={file.id}
+                  className={`file-card ${selected.includes(file.id) ? "selected" : ""}`}
+                  onClick={() =>
+                    setSelected((ids) =>
+                      ids.includes(file.id)
+                        ? ids.filter((id) => id !== file.id)
+                        : [...ids, file.id],
+                    )
+                  }
+                  onDoubleClick={() =>
+                    file.kind === "folder"
+                      ? onOpenFolder({ id: file.id, name: file.name })
+                      : download(file)
+                  }
+                >
+                  <div className="file-thumbnail">
+                    <span className="file-icon">
+                      {file.kind === "folder"
+                        ? "📁"
+                        : isImage(file.name)
+                          ? "🖼️"
+                          : isVideo(file.name)
+                            ? "🎬"
+                            : isAudio(file.name)
+                              ? "🎵"
+                              : isDocument(file.name)
+                                ? "📄"
+                                : isArchive(file.name)
+                                  ? "🗜️"
+                                  : "📄"}
+                    </span>
+                  </div>
+                  <div className="file-card-body">
+                    <div className="file-name">{file.name}</div>
+                    <div className="file-meta">
+                      {file.kind === "folder"
+                        ? "Folder"
+                        : formatSize(file.size)}
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+            {!loading && !filteredFiles.length && (
+              <div className="empty-state">No files found.</div>
+            )}
+          </div>
+          <input
+            ref={uploadInput}
+            type="file"
+            multiple
+            hidden
+            onChange={upload}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
